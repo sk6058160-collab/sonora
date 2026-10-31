@@ -90,3 +90,5 @@ html[data-theme=light] li .h,html[data-theme=light] #nfav{color:#1c1c1e}html[dat
 html[data-theme=light] #np{background:rgba(255,255,255,.22)}
 html[data-theme=light] #amb img{opacity:.45;filter:blur(50px) saturate(2)}html[data-theme=light] #amb i{opacity:.6;filter:saturate(1.6) brightness(.85)}
 html[data-theme=light] body:has(#np.up) #amb i{opacity:.75}
+body:has(#np:not([hidden])) #amb{z-index:14;background:#0b0b10}
+html[data-theme=light] body:has(#np:not([hidden])) #amb{background:#f4f4f7}
