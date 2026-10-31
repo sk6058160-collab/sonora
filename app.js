@@ -1,17 +1,30 @@
 const $=s=>document.querySelector(s),audio=$('#audio');let tab='radio';
 const favs=()=>JSON.parse(localStorage.favs||'[]'),isFav=id=>favs().some(f=>f.id===id);
 function toggleFav(it){let f=favs();f=isFav(it.id)?f.filter(x=>x.id!==it.id):[...f,it];localStorage.favs=JSON.stringify(f);if(tab==='fav')render(f);}
-function render(items){$('#list').innerHTML='';if(!items.length)$('#msg').textContent='Kuch nahi mila.';
- items.forEach(it=>{const li=document.createElement('li');li.innerHTML=`<img src="${it.img||'./icon-192.png'}" onerror="this.src='./icon-192.png'"><div class="t"><b></b><small></small></div><button class="p">▶</button><button class="h">${isFav(it.id)?'❤️':'🤍'}</button>`;
+function render(items,keep){if(!keep){$('#list').innerHTML='';if(!items.length)$('#msg').textContent='Kuch nahi mila.';}
+ items.forEach(it=>{const li=document.createElement('li');li.innerHTML=`<img src="${it.img||'./icon-192.png'}" onerror="this.src='./icon-192.png'"><div class="t">${it.badge?`<i class="bd">${it.badge}</i>`:''}<b></b><small></small></div><button class="p">▶</button><button class="h">${isFav(it.id)?'❤️':'🤍'}</button>`;
  li.querySelector('b').textContent=it.name;li.querySelector('small').textContent=it.artist||[it.country,it.tags].filter(Boolean).join(' · ')||it.kind;
- li.querySelector('.p').onclick=()=>play(it);li.querySelector('.h').onclick=e=>{toggleFav(it);e.target.textContent=isFav(it.id)?'❤️':'🤍'};$('#list').append(li);});}
+ li.querySelector('.p').onclick=()=>it.kind==='ia'?iaPlay(it):play(it);li.querySelector('.h').onclick=e=>{toggleFav(it);e.target.textContent=isFav(it.id)?'❤️':'🤍'};$('#list').append(li);});}
 function play(it){$('#embed').innerHTML='';$('#now').textContent='▶ '+it.name;
  if(it.kind==='spotify'){audio.pause();$('#embed').innerHTML=`<iframe src="https://open.spotify.com/embed/${it.type}/${it.id}" height="${it.type==='track'?152:380}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;return;}
  if(it.kind==='archive'){$('#embed').innerHTML=`<iframe src="https://archive.org/embed/${it.id}&playlist=1" height="300" allow="autoplay"></iframe>`;audio.pause();return;}
  audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
  if('mediaSession'in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:it.name,artist:it.country||'Radio',artwork:[{src:it.img||'./icon-512.png',sizes:'512x512'}]});
   navigator.mediaSession.setActionHandler('play',()=>audio.play());navigator.mediaSession.setActionHandler('pause',()=>audio.pause());}}
-async function search(params){$('#msg').textContent='Load ho raha hai...';$('#list').innerHTML='';
+const IA='https://archive.org';
+async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await (await fetch(IA+'/metadata/'+it.id)).json();
+ const f=d.files.filter(x=>/\.mp3$/i.test(x.name)).sort((a,b)=>(a.track|0)-(b.track|0))[0];if(!f){$('#msg').textContent='Is item me mp3 nahi mila.';return;}
+ play({...it,kind:'radio',url:`https://${d.server}${d.dir}/${encodeURIComponent(f.name)}`,name:it.name+' — '+(f.title||f.name)});}
+async function all(q){$('#msg').textContent='Search ho raha hai...';$('#list').innerHTML='';const e=encodeURIComponent(q);
+ const [it,ia,rb]=await Promise.allSettled([
+  fetch('https://itunes.apple.com/search?media=music&entity=song&limit=10&term='+e).then(r=>r.json()),
+  fetch(IA+'/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=12&output=json&q='+encodeURIComponent(q+' AND mediatype:audio AND format:"VBR MP3" AND collection:(etree OR netlabels OR opensource_audio OR freemusicarchive OR audio_music)')).then(r=>r.json()),
+  fetch('https://de1.api.radio-browser.info/json/stations/search?limit=10&hidebroken=true&order=clickcount&reverse=true&name='+e).then(r=>r.json())]);
+ $('#msg').textContent='';const L=$('#list');const sec=(t,items,fail)=>{const h=document.createElement('h3');h.textContent=t+(fail?' (load nahi hua)':items.length?'':' (kuch nahi mila)');L.append(h);render(items,true);};
+ sec('Songs • iTunes preview (30s)',it.value?.results?.map(x=>({id:'it'+x.trackId,name:x.trackName,artist:x.artistName,img:x.artworkUrl100,url:x.previewUrl,kind:'radio',badge:'iTunes'})).filter(x=>x.url)||[],it.status!=='fulfilled');
+ sec('Free Full Tracks • Internet Archive',ia.value?.response?.docs?.map(d=>({id:d.identifier,name:d.title,artist:[].concat(d.creator||'').join(', '),img:IA+'/services/img/'+d.identifier,kind:'ia',badge:'Archive'}))||[],ia.status!=='fulfilled');
+ sec('Radio • Radio Browser',rb.value?.map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,kind:'radio',badge:'Radio'})).filter(s=>s.url.startsWith('https://'))||[],rb.status!=='fulfilled');}
+async function search(params){if(tab==='all')return all(new URLSearchParams(params).get('q')||'');$('#msg').textContent='Load ho raha hai...';$('#list').innerHTML='';
  try{const P=new URLSearchParams(params);
  if(tab==='spotify'){const m=(P.get('q')||'').match(/(track|album|playlist|episode|show|artist)[\/:]([A-Za-z0-9]{22})/);
   if(!m)throw new Error('Spotify track/album/playlist ka link paste karo (open.spotify.com/...).');$('#msg').textContent='';play({kind:'spotify',type:m[1],id:m[2],name:'Spotify '+m[1]});return;}
@@ -25,4 +38,4 @@ async function search(params){$('#msg').textContent='Load ho raha hai...';$('#li
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');tab=b.dataset.t;$('#presets').style.display=tab==='radio'?'flex':'none';$('#msg').textContent=tab==='spotify'?'Spotify link paste karke Search dabao.':'';$('#list').innerHTML='';if(tab==='fav')render(favs());});
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>search(b.dataset.p));
 $('#f').onsubmit=e=>{e.preventDefault();if(tab!=='fav')search('q='+encodeURIComponent($('#q').value));};
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');search('tag=bollywood');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');document.querySelector('nav button[data-t=all]').click();search('q=bollywood');
