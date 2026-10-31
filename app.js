@@ -8,7 +8,7 @@ function render(items,keep){if(!keep){$('#list').innerHTML='';if(!items.length)$
 function play(it){$('#embed').innerHTML='';$('#now').textContent='▶ '+it.name;
  if(it.kind==='spotify'){audio.pause();$('#embed').innerHTML=`<iframe src="https://open.spotify.com/embed/${it.type}/${it.id}" height="${it.type==='track'?152:380}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;return;}
  if(it.kind==='archive'){$('#embed').innerHTML=`<iframe src="https://archive.org/embed/${it.id}&playlist=1" height="300" allow="autoplay"></iframe>`;audio.pause();return;}
- audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
+ if(hOn())audio.crossOrigin='anonymous';else audio.removeAttribute('crossorigin');audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
  ms(it);}
 const IA='https://archive.org';
 async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await (await fetch(IA+'/metadata/'+it.id)).json();
@@ -53,3 +53,15 @@ function pos(){const m=navigator.mediaSession;if(m&&m.setPositionState&&isFinite
 audio.addEventListener('play',()=>navigator.mediaSession&&(navigator.mediaSession.playbackState='playing'));
 audio.addEventListener('pause',()=>navigator.mediaSession&&(navigator.mediaSession.playbackState='paused'));
 audio.addEventListener('ended',()=>step(1));
+
+// Beat Haptics: read-only analysis -> navigator.vibrate (Android only)
+const hx=$('#hx'),canV='vibrate' in navigator&&!/iPhone|iPad|iPod/.test(navigator.userAgent);let actx,an,buf,last=0,avg=0,graph=false;
+function hOn(){return canV&&localStorage.haptics==='1';}
+if(!canV){hx.disabled=true;$('#hn').textContent='iPhone par available nahi';}else hx.checked=hOn();
+hx.onchange=()=>{localStorage.haptics=hx.checked?'1':'0';if(hx.checked)attach();};
+function attach(){if(graph||!hOn())return;try{actx=actx||new AudioContext();const src=actx.createMediaElementSource(audio);an=actx.createAnalyser();an.fftSize=512;
+ src.connect(an);an.connect(actx.destination);buf=new Uint8Array(an.frequencyBinCount);graph=true;loop();}catch(e){hx.checked=false;localStorage.haptics='0';}}
+function loop(){requestAnimationFrame(loop);if(!hOn()||audio.paused)return;an.getByteFrequencyData(buf);let e=0;for(let i=1;i<8;i++)e+=buf[i];e/=7;
+ avg=avg*.95+e*.05;const t=performance.now();if(e>avg*1.35&&e>120&&t-last>180){navigator.vibrate(25);last=t;}}
+audio.addEventListener('play',()=>{if(hOn()){attach();actx&&actx.resume();}});
+audio.addEventListener('error',()=>{if(graph&&audio.crossOrigin){localStorage.haptics='0';$('#msg').textContent='Ye stream Beat Haptics support nahi karta, haptics band karke reload ho raha hai...';setTimeout(()=>location.reload(),1500);}});
