@@ -25,8 +25,8 @@ function play(it){$('#embed').innerHTML='';$('#now').textContent=it.name;
  ms(it);}
 const IA='https://archive.org';
 async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await (await fetch(IA+'/metadata/'+it.id)).json();
- const f=d.files.filter(x=>/\.mp3$/i.test(x.name)).sort((a,b)=>(a.track|0)-(b.track|0))[0];if(!f){$('#msg').textContent='Is item me mp3 nahi mila.';return;}
- play({...it,kind:'radio',url:`https://${d.server}${d.dir}/${encodeURIComponent(f.name)}`,name:it.name+' — '+(f.title||f.name)});}
+ const f=d.files.filter(x=>/\.mp3$/i.test(x.name)).sort((a,b)=>(a.track|0)-(b.track|0))[0];if(!f){skip(it);return;}
+ play({...it,kind:'radio',url:`${IA}/download/${encodeURIComponent(it.id)}/${encodeURIComponent(f.name)}`,name:it.name+' — '+(f.title||f.name)});}
 async function all(q){$('#msg').textContent='Search ho raha hai...';$('#list').innerHTML='';const e=encodeURIComponent(q);
  const [ia,rb]=await Promise.allSettled([
   fetch(IA+'/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=12&output=json&q='+encodeURIComponent(q+' AND mediatype:audio AND format:"VBR MP3" AND collection:(etree OR netlabels OR opensource_audio OR freemusicarchive OR audio_music)')).then(r=>r.json()),
@@ -48,10 +48,10 @@ async function search(params){if(tab==='all')return all(new URLSearchParams(para
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');tab=b.dataset.t;$('#presets').style.display=tab==='radio'?'flex':'none';$('#msg').textContent=tab==='spotify'?'Spotify link paste karke Search dabao. Full gaane ke liye Safari mein Spotify login hona chahiye, warna 30s preview.':'';$('#list').innerHTML='';if(tab==='fav')render(favs());});
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>search(b.dataset.p));
 $('#f').onsubmit=e=>{e.preventDefault();if(tab!=='fav')search('q='+encodeURIComponent($('#q').value));};
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');document.querySelector('nav button[data-t=all]').click();search('q=bollywood');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');
 
 let cur=null;
-function queue(){return [...document.querySelectorAll('#list li')].map(l=>l._it).filter(i=>i&&i.kind!=='spotify');}
+function queue(){if(window.QL&&tab==='home')return QL;return [...document.querySelectorAll('#list li')].map(l=>l._it).filter(i=>i&&i.kind!=='spotify');}
 function step(d){const q=queue(),i=q.findIndex(x=>x.id===cur?.id),n=q[(i+d+q.length)%q.length];if(n)(n.kind==='ia'?iaPlay(n):play(n));}
 function ms(it){cur=it;if(!('mediaSession'in navigator))return;const m=navigator.mediaSession,src=it.img||'./icon-512.png';
  const art=it.img&&it.img.includes('100x100')?[96,128,192,256,384,512].map(z=>({src:it.img.replace('100x100',z+'x'+z),sizes:z+'x'+z,type:'image/jpeg'})):[96,192,512].map(z=>({src,sizes:z+'x'+z}));
@@ -151,3 +151,77 @@ thm.onchange=()=>{const t=thm.value;localStorage.theme=t;document.documentElemen
 
 $('#nprev').innerHTML=IC.prev;$('#nnext').innerHTML=IC.next;$('#npp').innerHTML=$('#mpp').innerHTML=IC.play;setHeart($('#nfav'),false);
 thm.addEventListener('change',()=>{if(palIt&&!palIt.img)setPal(phPal(palIt));});
+
+// v15: playable-only Archive search, instant search, icon tabs, console-style Home
+const NI={home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+all:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>',
+radio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2.5"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14.5" r="2.5"/><path d="M6.5 12.5h4M6.5 16.5h4"/></svg>',
+spotify:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7 9.5c3.5-1 7.5-.6 10.5 1M7.5 13c3-.8 6-.4 8.5.9M8 16.3c2.3-.5 4.6-.3 6.5.7"/></svg>',
+fav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3v18M10 3v18"/><path d="m14.5 3.5 5 17"/></svg>'};
+document.querySelectorAll('nav button').forEach(b=>b.innerHTML=NI[b.dataset.t]||'');
+const IAU=new Map();
+async function iaResolve(id,signal){if(IAU.has(id))return IAU.get(id);
+ const p=fetch(IA+'/metadata/'+id,{signal}).then(r=>r.json()).then(d=>{if(!d||!d.files||d.is_dark||d.metadata?.['access-restricted-item']==='true')return null;
+  const f=d.files.filter(x=>/\.mp3$/i.test(x.name)&&x.private!=='true'&&(+x.size||1)>50000).sort((a,b)=>(a.track|0)-(b.track|0))[0];
+  return f?{url:`${IA}/download/${encodeURIComponent(id)}/${f.name.split('/').map(encodeURIComponent).join('/')}`,ft:f.title||''}:null;}).catch(e=>{IAU.delete(id);if(e.name==='AbortError')throw e;return null;});
+ IAU.set(id,p);return p;}
+async function iaSearch(q,signal,rows=24){const j=await (await fetch(IA+'/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&sort[]=downloads+desc&rows='+rows+'&output=json&q='+encodeURIComponent('('+q+') AND mediatype:audio AND format:(VBR MP3 OR MP3)'),{signal})).json();
+ const docs=j.response?.docs||[];const r=await Promise.all(docs.map(d=>iaResolve(d.identifier,signal)));
+ return docs.map((d,i)=>r[i]&&{id:d.identifier,name:d.title||d.identifier,artist:[].concat(d.creator||'').join(', ')||'Internet Archive',img:'',kind:'ia',badge:'Archive',url:r[i].url}).filter(Boolean);}
+iaPlay=async function(it){let u=it.url;if(!u){const r=await iaResolve(it.id);if(!r)return skip(it);u=r.url;}play({...it,kind:'ia',url:u});};
+const _p3=play;play=function(it){if(it.kind==='ia'&&it.url){const r=_p2({...it,kind:'radio'});cur=it;sync();return r;}return _p3(it);};
+let skips=0;function skip(){if(++skips>8){skips=0;return;}step(1);}
+audio.addEventListener('playing',()=>skips=0);fb.addEventListener('playing',()=>skips=0);
+audio.addEventListener('error',()=>{if(audio.src&&!audio.crossOrigin&&!graph)setTimeout(()=>{if(audio.error)skip();},50);});
+fb.addEventListener('error',()=>{if(!fb.hidden&&fb.src)skip();});
+audio.addEventListener('playing',()=>{if($('#msg').textContent.startsWith('Stream nahi'))$('#msg').textContent='';});
+// instant search
+const SK=n=>Array.from({length:n},()=>'<li class="sk"><i></i><div><b></b><small></small></div></li>').join('');
+let sAC=null,sT=0;
+all=async function(q){q=q.trim();sAC&&sAC.abort();const L=$('#list');$('#msg').textContent='';
+ if(!q){L.innerHTML='<li class="empty"><b>Kuch bhi search karo</b><small>Artist, gaana ya radio station — sirf chalne wale results.</small></li>';return;}
+ const ac=sAC=new AbortController();L.innerHTML=SK(7);
+ const e=encodeURIComponent(q);const [ia,rb]=await Promise.allSettled([iaSearch(q,ac.signal),
+  fetch('https://de1.api.radio-browser.info/json/stations/search?limit=8&hidebroken=true&order=clickcount&reverse=true&name='+e,{signal:ac.signal}).then(r=>r.json())]);
+ if(ac.signal.aborted||tab!=='all')return;L.innerHTML='';
+ const tr=ia.value||[],st=(rb.value||[]).map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,kind:'radio',badge:'Radio'})).filter(s=>s.url.startsWith('https://')&&s.lastcheckok!==0);
+ if(!tr.length&&!st.length){L.innerHTML=`<li class="empty"><b>“${q.replace(/[<&>]/g,'')}” ke liye kuch nahi mila</b><small>Doosra spelling ya artist try karo.</small></li>`;return;}
+ const sk=document.createElement('div');sk.innerHTML=SK(4);const skr=[...sk.children];const tail=()=>skr.forEach(x=>L.append(x));tail();let shown=0;
+ for(const [t,items] of [['Songs',tr],['Radio',st]]){let h=null;
+  await pool(items,4,async it=>{if(ac.signal.aborted)return;if(!(await probe(it.url,ac.signal))||ac.signal.aborted)return;
+   if(!h){h=document.createElement('h3');h.textContent=t;L.append(h);}render([it],true);shown++;tail();});}
+ if(ac.signal.aborted)return;skr.forEach(x=>x.remove());
+ if(!shown)L.innerHTML=`<li class="empty"><b>“${q.replace(/[<&>]/g,'')}” ke liye chalne wala kuch nahi mila</b><small>Doosra spelling ya artist try karo.</small></li>`;};
+const PR=new Map();
+function probe(u,signal){if(PR.has(u))return PR.get(u);const p=new Promise(res=>{const a=new Audio();a.preload='metadata';a.muted=true;let d=0;
+ const f=v=>{if(d)return;d=1;clearTimeout(tm);a.removeAttribute('src');a.load();if(!v&&signal&&signal.aborted)PR.delete(u);res(v);};const tm=setTimeout(()=>f(false),9000);
+ a.onloadedmetadata=()=>f(true);a.onerror=()=>f(false);signal&&signal.addEventListener('abort',()=>f(false));a.src=u;});PR.set(u,p);return p;}
+async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length)await fn(items[i++]);}));}
+const qi=$('#q'),qx=$('#qx');
+qi.addEventListener('input',()=>{qx.hidden=!qi.value;if(tab!=='all')return;clearTimeout(sT);sT=setTimeout(()=>all(qi.value),250);});
+qx.onclick=()=>{qi.value='';qx.hidden=true;qi.focus();if(tab==='all')all('');else $('#list').innerHTML='';};
+// Home dashboard
+const home=$('#home');let homeBuilt=false;
+function card(it,list){const b=document.createElement('button');b.className='cd';b.setAttribute('aria-label','Play '+it.name);
+ b.innerHTML='<span class="ca"><img alt=""></span><b></b><small></small>';const im=b.querySelector('img');im.src=artOf(it);im.onerror=()=>{im.onerror=null;im.src=ph(it);};
+ b.querySelector('b').textContent=it.name;b.querySelector('small').textContent=it.artist||it.country||it.badge||'';const [h]=hues(it.name);b.style.setProperty('--g',`hsl(${h},90%,55%)`);
+ b.onclick=()=>{window.QL=list;it.kind==='ia'?iaPlay(it):play(it);};return b;}
+function shelf(t,items){if(!items.length)return;const s=document.createElement('section');s.className='shelf';s.innerHTML='<h2></h2><div class="rail"></div>';s.querySelector('h2').textContent=t;
+ const r=s.querySelector('.rail');items.forEach(it=>r.append(card(it,items)));home.append(s);
+ const act=()=>{const x=r.getBoundingClientRect().left;let best=null,d=1e9;for(const c of r.children){const dd=Math.abs(c.getBoundingClientRect().left-x-16);if(dd<d){d=dd;best=c;}}for(const c of r.children)c.classList.toggle('act',c===best);};
+ let raf=0;r.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(act);},{passive:true});act();}
+async function buildHome(){homeBuilt=true;home.innerHTML='<div class="hero sk"></div>'+'<section class="shelf"><h2>&nbsp;</h2><div class="rail">'+'<span class="cd sk"></span>'.repeat(4)+'</div></section>';
+ const [ia,rb]=await Promise.allSettled([iaSearch('bollywood OR hindi film songs',undefined,18),fetch('https://de1.api.radio-browser.info/json/stations/search?limit=16&hidebroken=true&order=clickcount&reverse=true&tag=bollywood').then(r=>r.json())]);
+ const ok=async l=>{const r=[];await pool(l,5,async it=>{if(await probe(it.url))r.push(it);});return l.filter(x=>r.includes(x));};
+ const tr=await ok(ia.value||[]),st=await ok((rb.value||[]).map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,kind:'radio',badge:'Radio'})).filter(s=>s.url.startsWith('https://')));
+ home.innerHTML='<p class="hk">Sonora</p><h1 class="ht">Aaj kya sunoge?</h1>';
+ const f=tr[0]||st[0];if(f){const [a,b]=hues(f.name),H=document.createElement('div');H.className='hero';H.style.setProperty('--g1',`hsl(${a},90%,55%)`);H.style.setProperty('--g2',`hsl(${b},85%,45%)`);
+  H.innerHTML=`<img class="hb" alt=""><div class="hc"><img class="ha" alt=""><div><i class="bd">Featured</i><h2></h2><p></p><button class="hp">${IC.play}<span>Play</span></button></div></div>`;
+  H.querySelectorAll('img').forEach(im=>{im.src=artOf(f);im.onerror=()=>{im.onerror=null;im.src=ph(f);};});H.querySelector('h2').textContent=f.name;H.querySelector('p').textContent=f.artist||f.country||'';
+  H.querySelector('.hp').onclick=()=>{window.QL=tr.length?tr:st;f.kind==='ia'?iaPlay(f):play(f);};home.append(H);}
+ shelf('Featured',tr.slice(1,7));shelf('Bollywood Radio',st);shelf('Free Full Tracks',tr.slice(7));shelf('Your Library',favs());}
+function showTab(){const h=tab==='home';home.hidden=!h;['#f','#list','#msg'].forEach(s=>$(s).hidden=h);if(h){$('#presets').style.display='none';if(!homeBuilt)buildHome();}
+ if(tab==='all'){if(qi.value)all(qi.value);else all('');}document.body.dataset.tab=tab;}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',showTab));
+const _tf=toggleFav;toggleFav=function(it){_tf(it);if(homeBuilt){const s=[...home.querySelectorAll('.shelf')].find(x=>x.querySelector('h2').textContent==='Your Library');s&&s.remove();shelf('Your Library',favs());}};
+document.querySelector('nav button[data-t=home]').click();
