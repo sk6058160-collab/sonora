@@ -65,3 +65,7 @@ function loop(){requestAnimationFrame(loop);if(!hOn()||audio.paused)return;an.ge
  avg=avg*.95+e*.05;const t=performance.now();if(e>avg*1.35&&e>120&&t-last>180){navigator.vibrate(25);last=t;}}
 audio.addEventListener('play',()=>{if(hOn()){attach();actx&&actx.resume();}});
 audio.addEventListener('error',()=>{if(graph&&audio.crossOrigin){localStorage.haptics='0';$('#msg').textContent='Ye stream Beat Haptics support nahi karta, haptics band karke reload ho raha hai...';setTimeout(()=>location.reload(),1500);}});
+
+const ht=$('#ht');if(!canV){ht.disabled=true;$('#hr').textContent='iPhone/iOS Safari vibrate API support nahi karta.';}
+ht.onclick=()=>{const sup='vibrate' in navigator;let r=false;if(sup)r=navigator.vibrate([120,80,120,80,240]);
+ $('#hr').textContent=`API supported: ${sup?'yes':'no'} · return: ${r} · userActivation.hasBeenActive: ${navigator.userActivation?navigator.userActivation.hasBeenActive:'n/a'}`;};
