@@ -4,13 +4,12 @@ function toggleFav(it){let f=favs();f=isFav(it.id)?f.filter(x=>x.id!==it.id):[..
 function render(items,keep){if(!keep){$('#list').innerHTML='';if(!items.length)$('#msg').textContent='Kuch nahi mila.';}
  items.forEach(it=>{const li=document.createElement('li');li.innerHTML=`<img src="${it.img||'./icon-192.png'}" onerror="this.src='./icon-192.png'"><div class="t">${it.badge?`<i class="bd">${it.badge}</i>`:''}<b></b><small></small></div><button class="p">▶</button><button class="h">${isFav(it.id)?'❤️':'🤍'}</button>`;
  li.querySelector('b').textContent=it.name;li.querySelector('small').textContent=it.artist||[it.country,it.tags].filter(Boolean).join(' · ')||it.kind;
- li.querySelector('.p').onclick=()=>it.kind==='ia'?iaPlay(it):play(it);li.querySelector('.h').onclick=e=>{toggleFav(it);e.target.textContent=isFav(it.id)?'❤️':'🤍'};$('#list').append(li);});}
+ li._it=it;li.querySelector('.p').onclick=()=>it.kind==='ia'?iaPlay(it):play(it);li.querySelector('.h').onclick=e=>{toggleFav(it);e.target.textContent=isFav(it.id)?'❤️':'🤍'};$('#list').append(li);});}
 function play(it){$('#embed').innerHTML='';$('#now').textContent='▶ '+it.name;
  if(it.kind==='spotify'){audio.pause();$('#embed').innerHTML=`<iframe src="https://open.spotify.com/embed/${it.type}/${it.id}" height="${it.type==='track'?152:380}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;return;}
  if(it.kind==='archive'){$('#embed').innerHTML=`<iframe src="https://archive.org/embed/${it.id}&playlist=1" height="300" allow="autoplay"></iframe>`;audio.pause();return;}
  audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
- if('mediaSession'in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:it.name,artist:it.country||'Radio',artwork:[{src:it.img||'./icon-512.png',sizes:'512x512'}]});
-  navigator.mediaSession.setActionHandler('play',()=>audio.play());navigator.mediaSession.setActionHandler('pause',()=>audio.pause());}}
+ ms(it);}
 const IA='https://archive.org';
 async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await (await fetch(IA+'/metadata/'+it.id)).json();
  const f=d.files.filter(x=>/\.mp3$/i.test(x.name)).sort((a,b)=>(a.track|0)-(b.track|0))[0];if(!f){$('#msg').textContent='Is item me mp3 nahi mila.';return;}
@@ -39,3 +38,18 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.query
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>search(b.dataset.p));
 $('#f').onsubmit=e=>{e.preventDefault();if(tab!=='fav')search('q='+encodeURIComponent($('#q').value));};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');document.querySelector('nav button[data-t=all]').click();search('q=bollywood');
+
+let cur=null;
+function queue(){return [...document.querySelectorAll('#list li')].map(l=>l._it).filter(i=>i&&i.kind!=='spotify');}
+function step(d){const q=queue(),i=q.findIndex(x=>x.id===cur?.id),n=q[(i+d+q.length)%q.length];if(n)(n.kind==='ia'?iaPlay(n):play(n));}
+function ms(it){cur=it;if(!('mediaSession'in navigator))return;const m=navigator.mediaSession,src=it.img||'./icon-512.png';
+ const art=it.img&&it.img.includes('100x100')?[96,128,192,256,384,512].map(z=>({src:it.img.replace('100x100',z+'x'+z),sizes:z+'x'+z,type:'image/jpeg'})):[96,192,512].map(z=>({src,sizes:z+'x'+z}));
+ m.metadata=new MediaMetadata({title:it.name,artist:it.artist||it.country||'Sonora',album:it.badge||'Sonora',artwork:art});
+ const h={play:()=>audio.play(),pause:()=>audio.pause(),previoustrack:()=>step(-1),nexttrack:()=>step(1),
+  seekto:e=>{if(isFinite(audio.duration)){audio.currentTime=e.seekTime;pos();}},seekbackward:e=>{audio.currentTime=Math.max(0,audio.currentTime-(e.seekOffset||10))},seekforward:e=>{audio.currentTime+= (e.seekOffset||10)}};
+ for(const k in h)try{m.setActionHandler(k,h[k])}catch(_){}}
+function pos(){const m=navigator.mediaSession;if(m&&m.setPositionState&&isFinite(audio.duration)&&audio.duration>0)try{m.setPositionState({duration:audio.duration,playbackRate:audio.playbackRate,position:Math.min(audio.currentTime,audio.duration)})}catch(_){}}
+['loadedmetadata','seeked','ratechange','play'].forEach(e=>audio.addEventListener(e,pos));
+audio.addEventListener('play',()=>navigator.mediaSession&&(navigator.mediaSession.playbackState='playing'));
+audio.addEventListener('pause',()=>navigator.mediaSession&&(navigator.mediaSession.playbackState='paused'));
+audio.addEventListener('ended',()=>step(1));

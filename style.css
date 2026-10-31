@@ -15,3 +15,14 @@ button{background:#1c1c1e}#presets button.on,form button{background:#fa2d48;colo
 h3{color:#fff;font-size:20px;font-weight:700}li img{border-radius:6px}li .p{background:#fa2d48;color:#fff;border-radius:50%;width:36px;height:36px;padding:0}
 footer{bottom:calc(58px + env(safe-area-inset-bottom));background:rgba(44,44,46,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin:0 8px;border-radius:14px;left:0;right:0}
 body{padding-bottom:230px}
+
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
+body{min-height:100dvh;overflow-x:hidden;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));padding-top:max(8px,env(safe-area-inset-top))}
+button,a,input,li{touch-action:manipulation}button{min-height:44px;min-width:44px}input{font-size:16px;min-height:44px;min-width:0}
+h1{font-size:clamp(26px,8vw,34px)}
+nav{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+footer{left:env(safe-area-inset-left);right:env(safe-area-inset-right)}
+#embed iframe,audio,img{max-width:100%}li{min-width:0}
+@media (min-width:700px){ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 16px}}
+@media (orientation:landscape) and (max-height:500px){h1{font-size:22px;margin:4px 0}body{padding-bottom:170px}}
+header{padding-top:max(env(safe-area-inset-top),12px)}body{padding-top:0}
