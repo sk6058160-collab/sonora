@@ -16,7 +16,7 @@ async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await
  play({...it,kind:'radio',url:`https://${d.server}${d.dir}/${encodeURIComponent(f.name)}`,name:it.name+' — '+(f.title||f.name)});}
 async function all(q){$('#msg').textContent='Search ho raha hai...';$('#list').innerHTML='';const e=encodeURIComponent(q);
  const [it,ia,rb]=await Promise.allSettled([
-  fetch('https://itunes.apple.com/search?media=music&entity=song&limit=10&term='+e).then(r=>r.json()),
+  fetch('https://itunes.apple.com/search?entity=song&limit=10&term='+e).then(r=>r.json()),
   fetch(IA+'/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=12&output=json&q='+encodeURIComponent(q+' AND mediatype:audio AND format:"VBR MP3" AND collection:(etree OR netlabels OR opensource_audio OR freemusicarchive OR audio_music)')).then(r=>r.json()),
   fetch('https://de1.api.radio-browser.info/json/stations/search?limit=10&hidebroken=true&order=clickcount&reverse=true&name='+e).then(r=>r.json())]);
  $('#msg').textContent='';const L=$('#list');const sec=(t,items,fail)=>{const h=document.createElement('h3');h.textContent=t+(fail?' (load nahi hua)':items.length?'':' (kuch nahi mila)');L.append(h);render(items,true);};
@@ -34,7 +34,7 @@ async function search(params){if(tab==='all')return all(new URLSearchParams(para
  const j=await (await fetch('https://archive.org/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=20&output=json&q='+encodeURIComponent((P.get('q')||'music')+' AND mediatype:audio'))).json();$('#msg').textContent='';
  render(j.response.docs.map(d=>({id:d.identifier,name:d.title,artist:[].concat(d.creator||'').join(', '),kind:'archive'})));}
  catch(e){$('#msg').textContent=e.message;}}
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');tab=b.dataset.t;$('#presets').style.display=tab==='radio'?'flex':'none';$('#msg').textContent=tab==='spotify'?'Spotify link paste karke Search dabao.':'';$('#list').innerHTML='';if(tab==='fav')render(favs());});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');tab=b.dataset.t;$('#presets').style.display=tab==='radio'?'flex':'none';$('#msg').textContent=tab==='spotify'?'Spotify link paste karke Search dabao. Full gaane ke liye Safari mein Spotify login hona chahiye, warna 30s preview.':'';$('#list').innerHTML='';if(tab==='fav')render(favs());});
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>search(b.dataset.p));
 $('#f').onsubmit=e=>{e.preventDefault();if(tab!=='fav')search('q='+encodeURIComponent($('#q').value));};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');document.querySelector('nav button[data-t=all]').click();search('q=bollywood');
@@ -75,7 +75,7 @@ const ob=$('#ob'),standalone=navigator.standalone||matchMedia('(display-mode: st
 if(!canV)$('#obh').textContent='Haptics iPhone par supported nahi.';
 function showOb(){ob.hidden=false;}
 if(!localStorage.onboard)showOb();
-$('#set').onclick=showOb;
+$('#set').onclick=()=>{$('#st').hidden=false;};$('#stc').onclick=()=>{$('#st').hidden=true;};$('#sob').onclick=()=>{$('#st').hidden=true;showOb();};
 $('#oy').onclick=()=>{try{const c=actx||(actx=new AudioContext());const b=c.createBuffer(1,1,22050),n=c.createBufferSource();n.buffer=b;n.connect(c.destination);n.start(0);c.resume();}catch(_){}
  localStorage.sound='1';localStorage.onboard='allow';if(canV){localStorage.haptics='1';hx.checked=true;navigator.vibrate(60);}ob.hidden=true;};
 $('#on').onclick=()=>{localStorage.sound='0';localStorage.haptics='0';hx.checked=false;localStorage.onboard='later';ob.hidden=true;};
@@ -84,7 +84,7 @@ let analysable=false;const fb=document.createElement('audio');fb.controls=true;f
 function A(){return fb.hidden?audio:fb;}
 function anOn(){return hOn()||ambOn()||edgeOn();}
 function useMain(){if(!fb.hidden){fb.pause();fb.removeAttribute('src');fb.load();fb.hidden=true;audio.hidden=false;}}
-audio.addEventListener('playing',()=>{analysable=graph&&audio.crossOrigin==='anonymous';});
+audio.addEventListener('playing',()=>{if(anOn()&&audio.crossOrigin==='anonymous'){attach();actx&&actx.resume();}analysable=graph&&audio.crossOrigin==='anonymous';ambState();});
 audio.addEventListener('error',()=>{if(!audio.crossOrigin||!audio.src)return;const u=audio.src;analysable=false;
  if(graph){audio.removeAttribute('src');audio.hidden=true;fb.hidden=false;fb.src=u;fb.play().catch(()=>{});}
  else{audio.removeAttribute('crossorigin');audio.src=u;audio.play().catch(()=>{});}});
@@ -95,7 +95,6 @@ const edge=document.createElement('div');edge.id='edge';document.body.append(edg
 const ambImg=amb.querySelector('img'),RM=matchMedia('(prefers-reduced-motion: reduce)');
 function ambOn(){return localStorage.ambient!=='0';}
 function edgeOn(){return localStorage.edge==='1';}
-const al=document.createElement('div');al.innerHTML='<label class="tg"><input type="checkbox" id="ax"> Ambient background</label><label class="tg"><input type="checkbox" id="ex"> Edge Lighting</label>';$('#hapt').before(al);
 const ax=$('#ax'),ex=$('#ex');ax.checked=ambOn();ex.checked=edgeOn();amb.hidden=!ambOn();edge.hidden=!edgeOn();
 ax.onchange=()=>{localStorage.ambient=ax.checked?'1':'0';amb.hidden=!ax.checked;};
 ex.onchange=()=>{localStorage.edge=ex.checked?'1':'0';edge.hidden=!ex.checked;};
@@ -114,3 +113,22 @@ function bands(){if(RM.matches||(!ambOn()&&!edgeOn()))return;const n=buf.length,
  R.setProperty('--s',(1.05+bv[0]*.25).toFixed(3));R.setProperty('--b',(.55+bv[1]*.6).toFixed(3));R.setProperty('--h',(bv[2]*60|0)+'deg');R.setProperty('--e',(.25+bv[0]*.75).toFixed(3));}
 function ambState(){const live=analysable&&!A().paused&&!RM.matches,p=document.hidden||RM.matches;[amb,edge].forEach(el=>{el.classList.toggle('live',live);el.classList.toggle('paused',p);});}
 setInterval(ambState,500);document.addEventListener('visibilitychange',ambState);
+
+// Mini player + Now Playing sheet
+const np=$('#np'),fmt=t=>isFinite(t)?(t/60|0)+':'+String(t%60|0).padStart(2,'0'):'--:--';
+function sync(){const a=A(),it=cur||{};const pl=!a.paused;$('#mpp').textContent=$('#npp').textContent=pl?'⏸':'▶';
+ $('#nt').textContent=it.name||'—';$('#na').textContent=it.artist||it.country||'';$('#mar').textContent=it.artist||it.country||it.badge||'';
+ const art=it.img?(it.img.includes('100x100')?it.img.replace('100x100','600x600'):it.img):'./icon-512.png';$('#nart').src=art;$('#mart').src=it.img||'./icon-192.png';
+ $('#nfav').textContent=it.id&&isFav(it.id)?'❤️':'🤍';
+ const sk=$('#seek');if(isFinite(a.duration)&&a.duration>0){sk.disabled=false;if(!sk._drag)sk.value=a.currentTime/a.duration*100;}else{sk.disabled=true;sk.value=0;}
+ $('#tc').textContent=fmt(a.currentTime);$('#td').textContent=isFinite(a.duration)?fmt(a.duration):'LIVE';}
+['play','pause','timeupdate','loadedmetadata','ended'].forEach(e=>{audio.addEventListener(e,sync);fb.addEventListener(e,sync);});
+const tp=()=>{const a=A();if(!a.src)return;a.paused?a.play():a.pause();};
+$('#mpp').onclick=e=>{e.stopPropagation();tp();};$('#npp').onclick=tp;$('#nprev').onclick=()=>step(-1);$('#nnext').onclick=()=>step(1);
+$('#nfav').onclick=()=>{if(cur){toggleFav(cur);sync();}};
+$('#player').onclick=()=>{np.hidden=false;requestAnimationFrame(()=>np.classList.add('up'));sync();};
+function closeNp(){np.classList.remove('up');setTimeout(()=>np.hidden=true,250);}
+$('#npc').onclick=closeNp;let y0=null;np.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+np.addEventListener('touchend',e=>{if(y0!==null&&e.changedTouches[0].clientY-y0>90&&e.target.id!=='seek')closeNp();y0=null;});
+const sk=$('#seek');sk.oninput=()=>{sk._drag=true;};sk.onchange=()=>{const a=A();if(isFinite(a.duration))a.currentTime=sk.value/100*a.duration;sk._drag=false;};
+const _p2=play;play=function(it){const r=_p2(it);cur=it;sync();return r;};
