@@ -127,3 +127,4 @@ html[data-theme=light] .sk i,html[data-theme=light] .sk b,html[data-theme=light]
 html[data-theme=light] .ht{color:#111}html[data-theme=light] .hero{box-shadow:0 18px 50px -16px var(--g1),0 0 0 1px rgba(0,0,0,.05) inset}html[data-theme=light] .hero .hb{filter:blur(40px) saturate(1.5) brightness(1.05)}
 html[data-theme=light] .ca{background:#e5e5ea}html[data-theme=light] .cd.act .ca{box-shadow:0 0 0 2px #fff,0 10px 30px -6px var(--g)}
 footer{bottom:calc(68px + env(safe-area-inset-bottom))}body{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+#f[hidden],#list[hidden],#msg[hidden]{display:none!important}

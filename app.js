@@ -211,7 +211,7 @@ function shelf(t,items){if(!items.length)return;const s=document.createElement('
  const act=()=>{const x=r.getBoundingClientRect().left;let best=null,d=1e9;for(const c of r.children){const dd=Math.abs(c.getBoundingClientRect().left-x-16);if(dd<d){d=dd;best=c;}}for(const c of r.children)c.classList.toggle('act',c===best);};
  let raf=0;r.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(act);},{passive:true});act();}
 async function buildHome(){homeBuilt=true;home.innerHTML='<div class="hero sk"></div>'+'<section class="shelf"><h2>&nbsp;</h2><div class="rail">'+'<span class="cd sk"></span>'.repeat(4)+'</div></section>';
- const [ia,rb]=await Promise.allSettled([iaSearch('bollywood OR hindi film songs',undefined,18),fetch('https://de1.api.radio-browser.info/json/stations/search?limit=16&hidebroken=true&order=clickcount&reverse=true&tag=bollywood').then(r=>r.json())]);
+ const [ia,rb]=await Promise.allSettled([iaSearch('title:(bollywood) AND subject:(songs OR hindi OR bollywood)',undefined,18),fetch('https://de1.api.radio-browser.info/json/stations/search?limit=16&hidebroken=true&order=clickcount&reverse=true&tag=bollywood').then(r=>r.json())]);
  const ok=async l=>{const r=[];await pool(l,5,async it=>{if(await probe(it.url))r.push(it);});return l.filter(x=>r.includes(x));};
  const tr=await ok(ia.value||[]),st=await ok((rb.value||[]).map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,kind:'radio',badge:'Radio'})).filter(s=>s.url.startsWith('https://')));
  home.innerHTML='<p class="hk">Sonora</p><h1 class="ht">Aaj kya sunoge?</h1>';
