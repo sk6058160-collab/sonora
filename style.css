@@ -60,3 +60,4 @@ footer#player{display:flex;align-items:center;gap:10px;height:64px;padding:8px 1
 .sw{position:relative;width:51px;height:31px;flex:none}.sw input{opacity:0;width:0;height:0;position:absolute}.sw i{position:absolute;inset:0;background:#39393d;border-radius:31px;transition:.2s}
 .sw i:before{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}.sw input:checked+i{background:#34c759}.sw input:checked+i:before{transform:translateX(20px)}.sw input:disabled+i{opacity:.4}
 #hr{display:block;color:#aaa;font-size:12px;padding:6px 0}
+html{background:#000;min-height:100%}
