@@ -61,3 +61,19 @@ footer#player{display:flex;align-items:center;gap:10px;height:64px;padding:8px 1
 .sw i:before{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}.sw input:checked+i{background:#34c759}.sw input:checked+i:before{transform:translateX(20px)}.sw input:disabled+i{opacity:.4}
 #hr{display:block;color:#aaa;font-size:12px;padding:6px 0}
 html{background:#000;min-height:100%}
+
+#thm{background:#2c2c2e;color:inherit;border:0;border-radius:8px;padding:8px 10px;font-size:16px;min-height:36px}
+html[data-theme=light],html[data-theme=light] body{background:#fff;color:#111}
+html[data-theme=light] input,html[data-theme=light] button,html[data-theme=light] #thm{background:#f0f0f3;color:#111}
+html[data-theme=light] form button,html[data-theme=light] #oy,html[data-theme=light] li .p{background:#fa2d48;color:#fff}
+html[data-theme=light] small,html[data-theme=light] #np p,html[data-theme=light] .tm{color:#666}
+html[data-theme=light] li{border-bottom-color:#e5e5ea}html[data-theme=light] h3{color:#111}
+html[data-theme=light] nav{background:rgba(250,250,252,.85);border-top-color:#ddd}html[data-theme=light] nav button{background:none;color:#8e8e93}html[data-theme=light] nav button.on{color:#fa2d48}
+html[data-theme=light] footer#player{background:rgba(245,245,247,.85)}html[data-theme=light] #mpp,html[data-theme=light] .ctl button,html[data-theme=light] #nfav,html[data-theme=light] #np .close{background:none;color:#111}
+html[data-theme=light] .sheet{background:rgba(255,255,255,.6)}html[data-theme=light] #st{background:rgba(250,250,252,.95)}html[data-theme=light] .row{border-bottom-color:#e5e5ea}
+html[data-theme=light] .sh .close{background:none;color:#fa2d48}html[data-theme=light] .sw i{background:#e9e9eb}html[data-theme=light] .sw input:checked+i{background:#34c759}
+html[data-theme=light] #seek{accent-color:#fa2d48}html[data-theme=light] .bd{background:#e5e5ea;color:#444}
+html[data-theme=light] #ob{background:rgba(0,0,0,.25)}html[data-theme=light] #ob .card{background:linear-gradient(160deg,#ffe3e8,#fff);color:#111}html[data-theme=light] #ob p{color:#444}
+html[data-theme=light] #amb img{opacity:.22;filter:blur(60px) saturate(1.8)}html[data-theme=light] #amb i{opacity:.3;filter:saturate(1.8) brightness(.8)}
+html[data-theme=light] #amb.live i{filter:saturate(1.8) brightness(calc(var(--b) * .9)) hue-rotate(var(--h))}
+html[data-theme=light] #edge{filter:saturate(2) brightness(.7)}html[data-theme=light] #edge.live{filter:saturate(2) brightness(.7) hue-rotate(var(--h))}

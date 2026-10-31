@@ -130,3 +130,7 @@ $('#npc').onclick=closeNp;let y0=null;np.addEventListener('touchstart',e=>{y0=e.
 np.addEventListener('touchend',e=>{if(y0!==null&&e.changedTouches[0].clientY-y0>90&&e.target.id!=='seek')closeNp();y0=null;});
 const sk=$('#seek');sk.oninput=()=>{sk._drag=true;};sk.onchange=()=>{const a=A();if(isFinite(a.duration))a.currentTime=sk.value/100*a.duration;sk._drag=false;};
 const _p2=play;play=function(it){const r=_p2(it);cur=it;sync();return r;};
+
+const thm=$('#thm');thm.value=document.documentElement.dataset.theme;
+thm.onchange=()=>{const t=thm.value;localStorage.theme=t;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='light'?'#ffffff':'#0b0b0f';
+ const s=document.querySelector('meta[name=apple-mobile-web-app-status-bar-style]');if(s)s.content=t==='light'?'default':'black-translucent';};
