@@ -15,12 +15,10 @@ async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await
  const f=d.files.filter(x=>/\.mp3$/i.test(x.name)).sort((a,b)=>(a.track|0)-(b.track|0))[0];if(!f){$('#msg').textContent='Is item me mp3 nahi mila.';return;}
  play({...it,kind:'radio',url:`https://${d.server}${d.dir}/${encodeURIComponent(f.name)}`,name:it.name+' — '+(f.title||f.name)});}
 async function all(q){$('#msg').textContent='Search ho raha hai...';$('#list').innerHTML='';const e=encodeURIComponent(q);
- const [it,ia,rb]=await Promise.allSettled([
-  fetch('https://itunes.apple.com/search?entity=song&limit=10&term='+e).then(r=>r.json()),
+ const [ia,rb]=await Promise.allSettled([
   fetch(IA+'/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=12&output=json&q='+encodeURIComponent(q+' AND mediatype:audio AND format:"VBR MP3" AND collection:(etree OR netlabels OR opensource_audio OR freemusicarchive OR audio_music)')).then(r=>r.json()),
   fetch('https://de1.api.radio-browser.info/json/stations/search?limit=10&hidebroken=true&order=clickcount&reverse=true&name='+e).then(r=>r.json())]);
  $('#msg').textContent='';const L=$('#list');const sec=(t,items,fail)=>{const h=document.createElement('h3');h.textContent=t+(fail?' (load nahi hua)':items.length?'':' (kuch nahi mila)');L.append(h);render(items,true);};
- sec('Songs • iTunes preview (30s)',it.value?.results?.map(x=>({id:'it'+x.trackId,name:x.trackName,artist:x.artistName,img:x.artworkUrl100,url:x.previewUrl,kind:'radio',badge:'iTunes'})).filter(x=>x.url)||[],it.status!=='fulfilled');
  sec('Free Full Tracks • Internet Archive',ia.value?.response?.docs?.map(d=>({id:d.identifier,name:d.title,artist:[].concat(d.creator||'').join(', '),img:IA+'/services/img/'+d.identifier,kind:'ia',badge:'Archive'}))||[],ia.status!=='fulfilled');
  sec('Radio • Radio Browser',rb.value?.map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,kind:'radio',badge:'Radio'})).filter(s=>s.url.startsWith('https://'))||[],rb.status!=='fulfilled');}
 async function search(params){if(tab==='all')return all(new URLSearchParams(params).get('q')||'');$('#msg').textContent='Load ho raha hai...';$('#list').innerHTML='';
@@ -106,7 +104,7 @@ function colors(src){if(!src){setPal(PAL);ambImg.removeAttribute('src');return;}
   const d=x.getImageData(0,0,24,24).data,bk={};for(let i=0;i<d.length;i+=4){const l=d[i]+d[i+1]+d[i+2];if(l<60||l>700)continue;const k=(d[i]>>5)+','+(d[i+1]>>5)+','+(d[i+2]>>5);(bk[k]=bk[k]||[0,0,0,0]);bk[k][0]+=d[i];bk[k][1]+=d[i+1];bk[k][2]+=d[i+2];bk[k][3]++;}
   const t=Object.values(bk).sort((a,b)=>b[3]-a[3]).slice(0,3).map(v=>`rgb(${v[0]/v[3]|0},${v[1]/v[3]|0},${v[2]/v[3]|0})`);setPal(t.length?[...t,...PAL].slice(0,3):PAL);}catch(_){setPal(PAL);}};
  im.onerror=()=>{setPal(PAL);ambImg.removeAttribute('src');};im.src=src;}
-const _play=play;play=function(it){colors(it.img&&it.img.includes('100x100')?it.img.replace('100x100','300x300'):it.img);if(it.kind!=='radio')analysable=false;return _play(it);};
+const _play=play;play=function(it){colors(it.img);if(it.kind!=='radio')analysable=false;return _play(it);};
 let bv=[0,0,0];const R=document.documentElement.style;
 function bands(){if(RM.matches||(!ambOn()&&!edgeOn()))return;const n=buf.length,seg=(a,b)=>{let s=0;for(let i=a;i<b;i++)s+=buf[i];return s/(b-a)/255;};
  const t=[seg(1,8),seg(8,40),seg(40,n/2|0)];bv=bv.map((v,i)=>v*.8+t[i]*.2);
