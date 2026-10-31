@@ -69,3 +69,13 @@ audio.addEventListener('error',()=>{if(graph&&audio.crossOrigin){localStorage.ha
 const ht=$('#ht');if(!canV){ht.disabled=true;$('#hr').textContent='iPhone/iOS Safari vibrate API support nahi karta.';}
 ht.onclick=()=>{const sup='vibrate' in navigator;let r=false;if(sup)r=navigator.vibrate([120,80,120,80,240]);
  $('#hr').textContent=`API supported: ${sup?'yes':'no'} · return: ${r} · userActivation.hasBeenActive: ${navigator.userActivation?navigator.userActivation.hasBeenActive:'n/a'}`;};
+
+// Onboarding
+const ob=$('#ob'),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+if(!canV)$('#obh').textContent='Haptics iPhone par supported nahi.';
+function showOb(){ob.hidden=false;}
+if(!localStorage.onboard)showOb();
+$('#set').onclick=showOb;
+$('#oy').onclick=()=>{try{const c=actx||(actx=new AudioContext());const b=c.createBuffer(1,1,22050),n=c.createBufferSource();n.buffer=b;n.connect(c.destination);n.start(0);c.resume();}catch(_){}
+ localStorage.sound='1';localStorage.onboard='allow';if(canV){localStorage.haptics='1';hx.checked=true;navigator.vibrate(60);}ob.hidden=true;};
+$('#on').onclick=()=>{localStorage.sound='0';localStorage.haptics='0';hx.checked=false;localStorage.onboard='later';ob.hidden=true;};

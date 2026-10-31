@@ -4,9 +4,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Music">
 <meta name="theme-color" content="#0b0b0f"><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" href="./favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png"><link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png">
 <link rel="stylesheet" href="./style.css"><title>Sonora</title></head><body>
-<header><h1>🎵 Sonora</h1><nav><button data-t="all" class="on">🔎 Search</button><button data-t="radio">📻 Radio</button><button data-t="spotify">Spotify</button><button data-t="fav">📚 Library</button></nav></header>
+<header><h1>🎵 Sonora <button id="set" aria-label="Settings" style="float:right;font-size:18px">⚙️</button></h1><nav><button data-t="all" class="on">🔎 Search</button><button data-t="radio">📻 Radio</button><button data-t="spotify">Spotify</button><button data-t="fav">📚 Library</button></nav></header>
 <form id="f"><input id="q" placeholder="Gaana / station search karo..."><button>Search</button></form>
 <div id="presets"><button data-p="tag=bollywood">Bollywood</button><button data-p="language=hindi">Hindi</button><button data-p="country=India">India</button><button data-p="tag=lofi">Lofi</button><button data-p="tag=pop">Pop</button><button data-p="tag=punjabi">Punjabi</button></div>
 <div id="msg"></div><ul id="list"></ul><div id="embed"></div>
 <footer id="player"><span id="now">Kuch play nahi ho raha</span><audio id="audio" controls playsinline></audio><label id="hapt"><input type="checkbox" id="hx"> Beat Haptics <small id="hn"></small></label><button id="ht" type="button">Test Haptics</button><small id="hr"></small></footer>
+<div id="ob" hidden><div class="card"><img src="./icon-192.png" alt=""><h2>Allow sounds and haptics?</h2>
+<p>Sonora ko music bajane do. <span id="obh">Android par beat ke saath halki vibration bhi.</span></p>
+<button id="oy">Allow</button><button id="on">Not now</button><small>Baad mein ⚙️ se badal sakte ho.</small></div></div>
 <script src="./app.js"></script></body></html>

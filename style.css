@@ -28,3 +28,6 @@ footer{left:env(safe-area-inset-left);right:env(safe-area-inset-right)}
 header{padding-top:max(env(safe-area-inset-top),12px)}body{padding-top:0}
 #hapt{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;min-height:44px}#hapt input{min-height:auto;width:22px;height:22px}
 #ht{font-size:13px;margin-top:4px}#hr{display:block;font-size:12px}
+#ob{position:fixed;inset:0;z-index:9;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}#ob[hidden]{display:none}
+#ob .card{background:linear-gradient(160deg,#2a0d14,#1c1c1e);border:1px solid #fa2d4855;border-radius:24px;padding:22px;max-width:420px;width:100%;text-align:center}
+#ob img{width:72px;height:72px;border-radius:18px}#ob h2{margin:10px 0 6px}#ob p{color:#bbb;font-size:15px}#ob button{display:block;width:100%;margin-top:8px}#oy{background:#fa2d48;color:#fff;font-weight:700}#ob small{color:#888}
