@@ -1,0 +1,28 @@
+const $=s=>document.querySelector(s),audio=$('#audio');let tab='radio';
+const favs=()=>JSON.parse(localStorage.favs||'[]'),isFav=id=>favs().some(f=>f.id===id);
+function toggleFav(it){let f=favs();f=isFav(it.id)?f.filter(x=>x.id!==it.id):[...f,it];localStorage.favs=JSON.stringify(f);if(tab==='fav')render(f);}
+function render(items){$('#list').innerHTML='';if(!items.length)$('#msg').textContent='Kuch nahi mila.';
+ items.forEach(it=>{const li=document.createElement('li');li.innerHTML=`<img src="${it.img||'./icon-192.png'}" onerror="this.src='./icon-192.png'"><div class="t"><b></b><small></small></div><button class="p">▶</button><button class="h">${isFav(it.id)?'❤️':'🤍'}</button>`;
+ li.querySelector('b').textContent=it.name;li.querySelector('small').textContent=it.artist||[it.country,it.tags].filter(Boolean).join(' · ')||it.kind;
+ li.querySelector('.p').onclick=()=>play(it);li.querySelector('.h').onclick=e=>{toggleFav(it);e.target.textContent=isFav(it.id)?'❤️':'🤍'};$('#list').append(li);});}
+function play(it){$('#embed').innerHTML='';$('#now').textContent='▶ '+it.name;
+ if(it.kind==='spotify'){audio.pause();$('#embed').innerHTML=`<iframe src="https://open.spotify.com/embed/${it.type}/${it.id}" height="${it.type==='track'?152:380}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;return;}
+ if(it.kind==='archive'){$('#embed').innerHTML=`<iframe src="https://archive.org/embed/${it.id}&playlist=1" height="300" allow="autoplay"></iframe>`;audio.pause();return;}
+ audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
+ if('mediaSession'in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:it.name,artist:it.country||'Radio',artwork:[{src:it.img||'./icon-512.png',sizes:'512x512'}]});
+  navigator.mediaSession.setActionHandler('play',()=>audio.play());navigator.mediaSession.setActionHandler('pause',()=>audio.pause());}}
+async function search(params){$('#msg').textContent='Load ho raha hai...';$('#list').innerHTML='';
+ try{const P=new URLSearchParams(params);
+ if(tab==='spotify'){const m=(P.get('q')||'').match(/(track|album|playlist|episode|show|artist)[\/:]([A-Za-z0-9]{22})/);
+  if(!m)throw new Error('Spotify track/album/playlist ka link paste karo (open.spotify.com/...).');$('#msg').textContent='';play({kind:'spotify',type:m[1],id:m[2],name:'Spotify '+m[1]});return;}
+ if(tab==='radio'){const p=new URLSearchParams({limit:'40',hidebroken:'true',order:'clickcount',reverse:'true'});
+  for(const k of['tag','country','language'])if(P.get(k))p.set(k,P.get(k));if(P.get('q'))p.set('name',P.get('q'));
+  const j=await (await fetch('https://de1.api.radio-browser.info/json/stations/search?'+p)).json();$('#msg').textContent='';
+  render(j.map(s=>({id:s.stationuuid,name:s.name.trim(),url:s.url_resolved||s.url,img:(s.favicon||'').startsWith('https')?s.favicon:'',country:s.country,tags:s.tags,kind:'radio'})).filter(s=>s.url.startsWith('https://')));return;}
+ const j=await (await fetch('https://archive.org/advancedsearch.php?fl[]=identifier&fl[]=title&fl[]=creator&rows=20&output=json&q='+encodeURIComponent((P.get('q')||'music')+' AND mediatype:audio'))).json();$('#msg').textContent='';
+ render(j.response.docs.map(d=>({id:d.identifier,name:d.title,artist:[].concat(d.creator||'').join(', '),kind:'archive'})));}
+ catch(e){$('#msg').textContent=e.message;}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');tab=b.dataset.t;$('#presets').style.display=tab==='radio'?'flex':'none';$('#msg').textContent=tab==='spotify'?'Spotify link paste karke Search dabao.':'';$('#list').innerHTML='';if(tab==='fav')render(favs());});
+document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>search(b.dataset.p));
+$('#f').onsubmit=e=>{e.preventDefault();if(tab!=='fav')search('q='+encodeURIComponent($('#q').value));};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');search('tag=bollywood');

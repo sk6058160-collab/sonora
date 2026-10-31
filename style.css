@@ -1,0 +1,8 @@
+*{box-sizing:border-box}body{margin:0;background:#0b0b0f;color:#eee;font-family:-apple-system,system-ui,sans-serif;padding:env(safe-area-inset-top) 12px 150px}
+h1{font-size:22px;margin:12px 0}nav,#presets{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+button{background:#22222a;color:#eee;border:0;border-radius:18px;padding:9px 14px;font-size:15px;white-space:nowrap}button.on{background:#1db954;color:#000}
+form{display:flex;gap:6px;margin-bottom:10px}input{flex:1;padding:11px;border-radius:12px;border:0;background:#1a1a22;color:#fff;font-size:16px}
+ul{list-style:none;padding:0}li{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #1d1d25}
+li img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#222}li .t{flex:1;min-width:0}li .t b,li .t small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}small{color:#999}
+#msg{color:#f9a}#embed iframe{width:100%;border:0;border-radius:12px;margin-top:8px}
+footer{position:fixed;left:0;right:0;bottom:0;background:#15151c;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}#now{font-size:14px;display:block;margin-bottom:6px}audio{width:100%}
