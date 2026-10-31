@@ -31,3 +31,16 @@ header{padding-top:max(env(safe-area-inset-top),12px)}body{padding-top:0}
 #ob{position:fixed;inset:0;z-index:9;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}#ob[hidden]{display:none}
 #ob .card{background:linear-gradient(160deg,#2a0d14,#1c1c1e);border:1px solid #fa2d4855;border-radius:24px;padding:22px;max-width:420px;width:100%;text-align:center}
 #ob img{width:72px;height:72px;border-radius:18px}#ob h2{margin:10px 0 6px}#ob p{color:#bbb;font-size:15px}#ob button{display:block;width:100%;margin-top:8px}#oy{background:#fa2d48;color:#fff;font-weight:700}#ob small{color:#888}
+:root{--s:1.05;--b:.6;--h:0deg;--e:.5}
+#amb{position:fixed;inset:-10%;z-index:-1;overflow:hidden;pointer-events:none}#amb[hidden],#edge[hidden]{display:none}
+#amb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(60px) saturate(1.4);opacity:.45}
+#amb i{position:absolute;inset:0;background:radial-gradient(circle at 20% 20%,var(--a0),transparent 55%),radial-gradient(circle at 80% 30%,var(--a1),transparent 55%),radial-gradient(circle at 50% 90%,var(--a2),transparent 60%);opacity:.55;animation:drift 24s ease-in-out infinite alternate}
+#amb.live i{animation:none;transform:scale(var(--s));filter:brightness(var(--b)) hue-rotate(var(--h));transition:transform .12s,filter .12s}
+#edge{position:fixed;inset:0;z-index:20;pointer-events:none;border-radius:max(env(safe-area-inset-top),0px) max(env(safe-area-inset-top),0px) 40px 40px;
+ box-shadow:inset 0 0 18px 2px var(--a0),inset 0 0 50px 8px var(--a1),inset 0 -20px 60px -10px var(--a2);opacity:.5;animation:breathe 5s ease-in-out infinite}
+#edge.live{animation:none;opacity:var(--e);filter:hue-rotate(var(--h));transition:opacity .1s}
+#amb.paused i,#edge.paused{animation-play-state:paused}
+@keyframes drift{0%{transform:translate(0,0) scale(1.05) rotate(0)}50%{transform:translate(-4%,3%) scale(1.15) rotate(8deg)}100%{transform:translate(3%,-3%) scale(1.08) rotate(-6deg)}}
+@keyframes breathe{0%,100%{opacity:.25}50%{opacity:.65}}
+@media (prefers-reduced-motion:reduce){#amb i,#edge{animation:none!important;transition:none!important}#amb i{transform:none!important}#edge{opacity:.4!important}}
+.tg{display:flex;align-items:center;gap:8px;font-size:13px;min-height:44px}.tg input{min-height:auto;width:22px;height:22px}

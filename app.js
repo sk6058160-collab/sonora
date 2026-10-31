@@ -8,7 +8,7 @@ function render(items,keep){if(!keep){$('#list').innerHTML='';if(!items.length)$
 function play(it){$('#embed').innerHTML='';$('#now').textContent='▶ '+it.name;
  if(it.kind==='spotify'){audio.pause();$('#embed').innerHTML=`<iframe src="https://open.spotify.com/embed/${it.type}/${it.id}" height="${it.type==='track'?152:380}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;return;}
  if(it.kind==='archive'){$('#embed').innerHTML=`<iframe src="https://archive.org/embed/${it.id}&playlist=1" height="300" allow="autoplay"></iframe>`;audio.pause();return;}
- if(hOn())audio.crossOrigin='anonymous';else audio.removeAttribute('crossorigin');audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
+ useMain();if(anOn())audio.crossOrigin='anonymous';else audio.removeAttribute('crossorigin');audio.src=it.url;audio.play().catch(e=>$('#msg').textContent='Stream nahi chala: '+e.message);
  ms(it);}
 const IA='https://archive.org';
 async function iaPlay(it){$('#now').textContent='Loading '+it.name;const d=await (await fetch(IA+'/metadata/'+it.id)).json();
@@ -45,7 +45,7 @@ function step(d){const q=queue(),i=q.findIndex(x=>x.id===cur?.id),n=q[(i+d+q.len
 function ms(it){cur=it;if(!('mediaSession'in navigator))return;const m=navigator.mediaSession,src=it.img||'./icon-512.png';
  const art=it.img&&it.img.includes('100x100')?[96,128,192,256,384,512].map(z=>({src:it.img.replace('100x100',z+'x'+z),sizes:z+'x'+z,type:'image/jpeg'})):[96,192,512].map(z=>({src,sizes:z+'x'+z}));
  m.metadata=new MediaMetadata({title:it.name,artist:it.artist||it.country||'Sonora',album:it.badge||'Sonora',artwork:art});
- const h={play:()=>audio.play(),pause:()=>audio.pause(),previoustrack:()=>step(-1),nexttrack:()=>step(1),
+ const h={play:()=>A().play(),pause:()=>A().pause(),previoustrack:()=>step(-1),nexttrack:()=>step(1),
   seekto:e=>{if(isFinite(audio.duration)){audio.currentTime=e.seekTime;pos();}},seekbackward:e=>{audio.currentTime=Math.max(0,audio.currentTime-(e.seekOffset||10))},seekforward:e=>{audio.currentTime+= (e.seekOffset||10)}};
  for(const k in h)try{m.setActionHandler(k,h[k])}catch(_){}}
 function pos(){const m=navigator.mediaSession;if(m&&m.setPositionState&&isFinite(audio.duration)&&audio.duration>0)try{m.setPositionState({duration:audio.duration,playbackRate:audio.playbackRate,position:Math.min(audio.currentTime,audio.duration)})}catch(_){}}
@@ -59,12 +59,12 @@ const hx=$('#hx'),canV='vibrate' in navigator&&!/iPhone|iPad|iPod/.test(navigato
 function hOn(){return canV&&localStorage.haptics==='1';}
 if(!canV){hx.disabled=true;$('#hn').textContent='iPhone par available nahi';}else hx.checked=hOn();
 hx.onchange=()=>{localStorage.haptics=hx.checked?'1':'0';if(hx.checked)attach();};
-function attach(){if(graph||!hOn())return;try{actx=actx||new AudioContext();const src=actx.createMediaElementSource(audio);an=actx.createAnalyser();an.fftSize=512;
+function attach(){if(graph||!anOn())return;try{actx=actx||new AudioContext();const src=actx.createMediaElementSource(audio);an=actx.createAnalyser();an.fftSize=512;
  src.connect(an);an.connect(actx.destination);buf=new Uint8Array(an.frequencyBinCount);graph=true;loop();}catch(e){hx.checked=false;localStorage.haptics='0';}}
-function loop(){requestAnimationFrame(loop);if(!hOn()||audio.paused)return;an.getByteFrequencyData(buf);let e=0;for(let i=1;i<8;i++)e+=buf[i];e/=7;
+function loop(){requestAnimationFrame(loop);if(audio.paused||!analysable||document.hidden)return;an.getByteFrequencyData(buf);bands();if(!hOn())return;let e=0;for(let i=1;i<8;i++)e+=buf[i];e/=7;
  avg=avg*.95+e*.05;const t=performance.now();if(e>avg*1.35&&e>120&&t-last>180){navigator.vibrate(25);last=t;}}
-audio.addEventListener('play',()=>{if(hOn()){attach();actx&&actx.resume();}});
-audio.addEventListener('error',()=>{if(graph&&audio.crossOrigin){localStorage.haptics='0';$('#msg').textContent='Ye stream Beat Haptics support nahi karta, haptics band karke reload ho raha hai...';setTimeout(()=>location.reload(),1500);}});
+audio.addEventListener('play',()=>{if(anOn()){attach();actx&&actx.resume();}});
+
 
 const ht=$('#ht');if(!canV){ht.disabled=true;$('#hr').textContent='iPhone/iOS Safari vibrate API support nahi karta.';}
 ht.onclick=()=>{const sup='vibrate' in navigator;let r=false;if(sup)r=navigator.vibrate([120,80,120,80,240]);
@@ -79,3 +79,38 @@ $('#set').onclick=showOb;
 $('#oy').onclick=()=>{try{const c=actx||(actx=new AudioContext());const b=c.createBuffer(1,1,22050),n=c.createBufferSource();n.buffer=b;n.connect(c.destination);n.start(0);c.resume();}catch(_){}
  localStorage.sound='1';localStorage.onboard='allow';if(canV){localStorage.haptics='1';hx.checked=true;navigator.vibrate(60);}ob.hidden=true;};
 $('#on').onclick=()=>{localStorage.sound='0';localStorage.haptics='0';hx.checked=false;localStorage.onboard='later';ob.hidden=true;};
+// Analysis availability + silent fallback for non-CORS streams (no reload)
+let analysable=false;const fb=document.createElement('audio');fb.controls=true;fb.setAttribute('playsinline','');fb.hidden=true;audio.after(fb);
+function A(){return fb.hidden?audio:fb;}
+function anOn(){return hOn()||ambOn()||edgeOn();}
+function useMain(){if(!fb.hidden){fb.pause();fb.removeAttribute('src');fb.load();fb.hidden=true;audio.hidden=false;}}
+audio.addEventListener('playing',()=>{analysable=graph&&audio.crossOrigin==='anonymous';});
+audio.addEventListener('error',()=>{if(!audio.crossOrigin||!audio.src)return;const u=audio.src;analysable=false;
+ if(graph){audio.removeAttribute('src');audio.hidden=true;fb.hidden=false;fb.src=u;fb.play().catch(()=>{});}
+ else{audio.removeAttribute('crossorigin');audio.src=u;audio.play().catch(()=>{});}});
+['play','pause','ended'].forEach(e=>fb.addEventListener(e,()=>audio.dispatchEvent(new Event(e))));
+// Ambient background + Edge Lighting
+const amb=document.createElement('div');amb.id='amb';amb.innerHTML='<img alt=""><i></i>';document.body.prepend(amb);
+const edge=document.createElement('div');edge.id='edge';document.body.append(edge);
+const ambImg=amb.querySelector('img'),RM=matchMedia('(prefers-reduced-motion: reduce)');
+function ambOn(){return localStorage.ambient!=='0';}
+function edgeOn(){return localStorage.edge==='1';}
+const al=document.createElement('div');al.innerHTML='<label class="tg"><input type="checkbox" id="ax"> Ambient background</label><label class="tg"><input type="checkbox" id="ex"> Edge Lighting</label>';$('#hapt').before(al);
+const ax=$('#ax'),ex=$('#ex');ax.checked=ambOn();ex.checked=edgeOn();amb.hidden=!ambOn();edge.hidden=!edgeOn();
+ax.onchange=()=>{localStorage.ambient=ax.checked?'1':'0';amb.hidden=!ax.checked;};
+ex.onchange=()=>{localStorage.edge=ex.checked?'1':'0';edge.hidden=!ex.checked;};
+const PAL=['#fa2d48','#5e2bff','#ff8a00'];
+function setPal(c){c.forEach((v,i)=>document.documentElement.style.setProperty('--a'+i,v));}
+setPal(PAL);
+function colors(src){if(!src){setPal(PAL);ambImg.removeAttribute('src');return;}const im=new Image();im.crossOrigin='anonymous';
+ im.onload=()=>{ambImg.src=src;try{const c=document.createElement('canvas');c.width=c.height=24;const x=c.getContext('2d');x.drawImage(im,0,0,24,24);
+  const d=x.getImageData(0,0,24,24).data,bk={};for(let i=0;i<d.length;i+=4){const l=d[i]+d[i+1]+d[i+2];if(l<60||l>700)continue;const k=(d[i]>>5)+','+(d[i+1]>>5)+','+(d[i+2]>>5);(bk[k]=bk[k]||[0,0,0,0]);bk[k][0]+=d[i];bk[k][1]+=d[i+1];bk[k][2]+=d[i+2];bk[k][3]++;}
+  const t=Object.values(bk).sort((a,b)=>b[3]-a[3]).slice(0,3).map(v=>`rgb(${v[0]/v[3]|0},${v[1]/v[3]|0},${v[2]/v[3]|0})`);setPal(t.length?[...t,...PAL].slice(0,3):PAL);}catch(_){setPal(PAL);}};
+ im.onerror=()=>{setPal(PAL);ambImg.removeAttribute('src');};im.src=src;}
+const _play=play;play=function(it){colors(it.img&&it.img.includes('100x100')?it.img.replace('100x100','300x300'):it.img);if(it.kind!=='radio')analysable=false;return _play(it);};
+let bv=[0,0,0];const R=document.documentElement.style;
+function bands(){if(RM.matches||(!ambOn()&&!edgeOn()))return;const n=buf.length,seg=(a,b)=>{let s=0;for(let i=a;i<b;i++)s+=buf[i];return s/(b-a)/255;};
+ const t=[seg(1,8),seg(8,40),seg(40,n/2|0)];bv=bv.map((v,i)=>v*.8+t[i]*.2);
+ R.setProperty('--s',(1.05+bv[0]*.25).toFixed(3));R.setProperty('--b',(.55+bv[1]*.6).toFixed(3));R.setProperty('--h',(bv[2]*60|0)+'deg');R.setProperty('--e',(.25+bv[0]*.75).toFixed(3));}
+function ambState(){const live=analysable&&!A().paused&&!RM.matches,p=document.hidden||RM.matches;[amb,edge].forEach(el=>{el.classList.toggle('live',live);el.classList.toggle('paused',p);});}
+setInterval(ambState,500);document.addEventListener('visibilitychange',ambState);
